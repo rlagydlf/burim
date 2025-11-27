@@ -1,0 +1,385 @@
+{% load static %}
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수거 캘린더 - 스마트 쓰레기 배출 알림</title>
+    <link rel="stylesheet" href="{% static 'pages/styles.css' %}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="min-h-screen bg-background">
+        <!-- Navigation Bar -->
+        <nav class="navbar">
+            <div class="navbar-container">
+                <!-- Logo -->
+                <div class="navbar-logo">
+                    <div class="logo-icon">
+                        <i data-lucide="recycle" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <span class="logo-text">버림</span>
+                </div>
+                
+                <!-- Navigation Items -->
+                <div class="navbar-menu">
+                    <a href="{% url 'index' %}" class="nav-item">
+                        <i data-lucide="home" class="w-5 h-5"></i>
+                        <span>홈</span>
+                    </a>
+                    <a href="{% url 'calendar' %}" class="nav-item active">
+                        <i data-lucide="calendar" class="w-5 h-5"></i>
+                        <span>수거 캘린더</span>
+                    </a>
+                    <a href="{% url 'guide' %}" class="nav-item nav-button">
+                        <i data-lucide="book-open" class="w-5 h-5"></i>
+                        <span>분리수거 가이드</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container mx-auto px-4 py-8">
+            <div class="mb-8">
+                <div class="flex items-center gap-4 mb-4">
+                    <a href="{% url 'index' %}">
+                        <button class="btn-outline flex items-center gap-2">
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                            홈으로
+                        </button>
+                    </a>
+                    <h1 class="text-2xl font-bold text-primary">수거 캘린더</h1>
+                </div>
+                <p class="text-muted-foreground">
+                    지역별 쓰레기 수거 일정을 월별 캘린더로 확인하세요
+                </p>
+            </div>
+
+            <!-- Region Selection -->
+            <div class="flex flex-col items-center text-center max-w-md mx-auto mb-8">
+                <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4">
+                    <i data-lucide="map-pin" class="w-8 h-8 text-primary-foreground"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-primary mb-3">
+                    지역을 선택해주세요
+                </h2>
+                <p class="text-muted-foreground mb-6">
+                    수거 일정을 확인할 지역을 선택하세요
+                </p>
+                <div class="w-full">
+                    <select id="region-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <option value="">지역을 선택하세요</option>
+                        {% for region in regions %}
+                            <option value="{{ region.code }}">{{ region.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Schedule Information -->
+            <div class="space-y-6">
+                {% for region in regions %}
+                    {% if region.code in region_schedules %}
+                        {% with schedule=region_schedules|get_item:region.code %}
+                        <div class="schedule-info" data-region="{{ region.code }}" style="display: none;">
+                            <div class="schedule-card">
+                                <h3 class="schedule-title">{{ schedule.name }} 배출 시간 및 방법</h3>
+                                <div class="schedule-content">
+                                    <div class="schedule-item">
+                                        <strong>배출 시간:</strong> {{ schedule.discharge_time }}
+                                    </div>
+                                    {% if schedule.residential_area_time %}
+                                    <div class="schedule-item">
+                                        <strong>주거지역:</strong> {{ schedule.residential_area_time }}
+                                    </div>
+                                    {% endif %}
+                                    {% if schedule.commercial_area_time %}
+                                    <div class="schedule-item">
+                                        <strong>상가지역/가로지역:</strong> {{ schedule.commercial_area_time }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="schedule-item">
+                                        <strong>배출 장소:</strong> {{ schedule.discharge_location }}
+                                    </div>
+                                    <div class="schedule-item">
+                                        <strong>배출 방법:</strong> {{ schedule.discharge_method }}
+                                    </div>
+                                    {% if schedule.special_note %}
+                                    <div class="schedule-item special">
+                                        <strong>특별 배출:</strong> {{ schedule.special_note|linebreaks }}
+                                    </div>
+                                    {% endif %}
+                                    <div class="schedule-item">
+                                        <strong>문의:</strong> {{ schedule.contact }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endwith %}
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Dynamic Calendar -->
+                <div class="bg-card border border-accent/20 rounded-lg p-6 shadow-sm" id="calendar-container" style="display: none; max-width: 100%;">
+                    <div class="flex items-center justify-between mb-6">
+                        <button id="prev-month" class="p-2 hover:bg-accent/20 rounded-lg transition-colors flex-shrink-0">
+                            <i data-lucide="chevron-left" class="w-5 h-5 text-primary"></i>
+                        </button>
+                        <h2 id="calendar-title" class="text-xl font-semibold text-foreground text-center flex-1"></h2>
+                        <button id="next-month" class="p-2 hover:bg-accent/20 rounded-lg transition-colors flex-shrink-0">
+                            <i data-lucide="chevron-right" class="w-5 h-5 text-primary"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Calendar Grid -->
+                    <div class="calendar-grid">
+                        <div class="calendar-header">
+                            <div class="calendar-day-header">일</div>
+                            <div class="calendar-day-header">월</div>
+                            <div class="calendar-day-header">화</div>
+                            <div class="calendar-day-header">수</div>
+                            <div class="calendar-day-header">목</div>
+                            <div class="calendar-day-header">금</div>
+                            <div class="calendar-day-header">토</div>
+                        </div>
+                        <div class="calendar-days" id="calendar-days"></div>
+                    </div>
+                    
+                    <!-- Legend -->
+                    <div class="mt-6 flex flex-wrap gap-4 justify-center">
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 bg-waste-general rounded"></div>
+                            <span class="text-sm" style="color: hsl(142, 76%, 36%);">일반쓰레기</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 bg-waste-recyclable rounded"></div>
+                            <span class="text-sm" style="color: hsl(25, 20%, 45%);">재활용품</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+        // Initialize Lucide icons only
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Calendar and Region filter functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const regionSelect = document.getElementById('region-select');
+            const scheduleInfos = document.querySelectorAll('.schedule-info');
+            const calendarContainer = document.getElementById('calendar-container');
+            const calendarDays = document.getElementById('calendar-days');
+            const calendarTitle = document.getElementById('calendar-title');
+            const prevMonthBtn = document.getElementById('prev-month');
+            const nextMonthBtn = document.getElementById('next-month');
+
+            let currentDate = new Date();
+            let currentYear = currentDate.getFullYear();
+            let currentMonth = currentDate.getMonth();
+            let selectedRegion = '';
+
+            // 지역별 수거 일정 규칙 (데이터베이스에서 가져온 정보)
+            const wasteSchedule = {{ waste_schedule_json|safe }};
+
+            // 캘린더 생성 함수
+            function generateCalendar(year, month, region) {
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const daysInMonth = lastDay.getDate();
+                const startingDayOfWeek = firstDay.getDay(); // 0 = 일요일
+
+                // 월 이름
+                const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+                calendarTitle.textContent = `${year}년 ${monthNames[month]} 수거 일정`;
+
+                // 이전 달의 마지막 날짜들
+                const prevMonthLastDay = new Date(year, month, 0).getDate();
+                
+                calendarDays.innerHTML = '';
+
+                // 이전 달의 날짜들
+                if (startingDayOfWeek > 0) {
+                    for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+                        const day = prevMonthLastDay - i;
+                        const dayElement = document.createElement('div');
+                        dayElement.className = 'calendar-day other-month';
+                        
+                        const dayNumber = document.createElement('div');
+                        dayNumber.className = 'calendar-day-number';
+                        dayNumber.textContent = day;
+                        dayElement.appendChild(dayNumber);
+                        
+                        calendarDays.appendChild(dayElement);
+                    }
+                }
+
+                // 현재 달의 날짜들
+                const schedule = wasteSchedule[region];
+                if (!schedule || !schedule.days || !schedule.pattern) {
+                    // 스케줄이 없으면 빈 캘린더만 표시
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const date = new Date(year, month, day);
+                        const isToday = year === currentDate.getFullYear() && 
+                                       month === currentDate.getMonth() && 
+                                       day === currentDate.getDate();
+                        const dayElement = document.createElement('div');
+                        dayElement.className = 'calendar-day';
+                        if (isToday) {
+                            dayElement.className += ' today';
+                        }
+                        const dayNumber = document.createElement('div');
+                        dayNumber.className = 'calendar-day-number';
+                        dayNumber.textContent = day;
+                        dayElement.appendChild(dayNumber);
+                        calendarDays.appendChild(dayElement);
+                    }
+                    return;
+                }
+                
+                // 일반쓰레기는 고정이므로 패턴 계산 불필요
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = new Date(year, month, day);
+                    const dayOfWeek = date.getDay();
+                    const isToday = year === currentDate.getFullYear() && 
+                                   month === currentDate.getMonth() && 
+                                   day === currentDate.getDate();
+
+                    const dayElement = document.createElement('div');
+                    dayElement.className = 'calendar-day';
+                    if (isToday) {
+                        dayElement.className += ' today';
+                    }
+                    
+                    // 날짜 번호 추가
+                    const dayNumber = document.createElement('div');
+                    dayNumber.className = 'calendar-day-number';
+                    dayNumber.textContent = day;
+                    dayElement.appendChild(dayNumber);
+                    
+                    // 수거일인지 확인
+                    let wasteTypes = [];
+                    let hasWaste = false;
+
+                    // 일반쓰레기는 토요일 제외 모든 요일 고정
+                    if (schedule.days && schedule.days.includes(dayOfWeek)) {
+                        hasWaste = true;
+                        wasteTypes.push('general');
+                    }
+                    
+                    // 재활용품 배출일 확인 (지역별로 다름)
+                    if (schedule.recyclable_days && schedule.recyclable_days.length > 0 && schedule.recyclable_days.includes(dayOfWeek)) {
+                        hasWaste = true;
+                        wasteTypes.push('recyclable');
+                    }
+
+                    // 쓰레기가 있는 경우 표시
+                    if (hasWaste && wasteTypes.length > 0) {
+                        dayElement.className += ' has-waste';
+                        
+                        const wasteTypesDiv = document.createElement('div');
+                        wasteTypesDiv.className = 'calendar-waste-types';
+                        
+                        wasteTypes.forEach(function(type) {
+                            const indicator = document.createElement('div');
+                            indicator.className = 'waste-indicator';
+                            
+                            if (type === 'general') {
+                                indicator.classList.add('bg-waste-general');
+                            } else if (type === 'recyclable') {
+                                indicator.classList.add('bg-waste-recyclable');
+                            }
+                            
+                            wasteTypesDiv.appendChild(indicator);
+                        });
+                        
+                        dayElement.appendChild(wasteTypesDiv);
+                    }
+
+                    calendarDays.appendChild(dayElement);
+                }
+
+                // 다음 달의 날짜들 (캘린더를 6주로 채우기 위해)
+                const totalCells = calendarDays.children.length;
+                const remainingCells = 42 - totalCells; // 6주 * 7일 = 42
+                
+                if (remainingCells > 0) {
+                    for (let day = 1; day <= remainingCells; day++) {
+                        const dayElement = document.createElement('div');
+                        dayElement.className = 'calendar-day other-month';
+                        
+                        const dayNumber = document.createElement('div');
+                        dayNumber.className = 'calendar-day-number';
+                        dayNumber.textContent = day;
+                        dayElement.appendChild(dayNumber);
+                        
+                        calendarDays.appendChild(dayElement);
+                    }
+                }
+
+                // Lucide 아이콘 다시 초기화
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+
+            // 월 변경 함수
+            function changeMonth(direction) {
+                currentMonth += direction;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                } else if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                }
+                if (selectedRegion) {
+                    generateCalendar(currentYear, currentMonth, selectedRegion);
+                }
+            }
+
+            prevMonthBtn.addEventListener('click', function() {
+                changeMonth(-1);
+            });
+
+            nextMonthBtn.addEventListener('click', function() {
+                changeMonth(1);
+            });
+
+            // 지역 필터 함수
+            function filterRegions() {
+                selectedRegion = regionSelect.value;
+                
+                scheduleInfos.forEach(function(scheduleInfo) {
+                    if (selectedRegion === '') {
+                        // 아무것도 선택하지 않으면 모두 숨김
+                        scheduleInfo.style.display = 'none';
+                        calendarContainer.style.display = 'none';
+                    } else {
+                        // 선택한 지역만 표시
+                        if (scheduleInfo.getAttribute('data-region') === selectedRegion) {
+                            scheduleInfo.style.display = 'block';
+                            calendarContainer.style.display = 'block';
+                            // 캘린더 생성
+                            currentYear = new Date().getFullYear();
+                            currentMonth = new Date().getMonth();
+                            generateCalendar(currentYear, currentMonth, selectedRegion);
+                        } else {
+                            scheduleInfo.style.display = 'none';
+                        }
+                    }
+                });
+            }
+
+            regionSelect.addEventListener('change', filterRegions);
+        });
+    </script>
+</body>
+</html>
+

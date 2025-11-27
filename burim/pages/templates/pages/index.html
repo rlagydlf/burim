@@ -1,0 +1,470 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스마트 쓰레기 배출 알림</title>
+    <link rel="stylesheet" href="{% static 'pages/styles.css' %}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="min-h-screen bg-background">
+        <!-- Navigation Bar -->
+        <nav class="navbar">
+            <div class="navbar-container">
+                <!-- Logo -->
+                <div class="navbar-logo">
+                    <div class="logo-icon">
+                        <i data-lucide="recycle" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <span class="logo-text">버림</span>
+                </div>
+                
+                <!-- Navigation Items -->
+                <div class="navbar-menu">
+                    <a href="{% url 'index' %}" class="nav-item active">
+                        <i data-lucide="home" class="w-5 h-5"></i>
+                        <span>홈</span>
+                    </a>
+                    <a href="{% url 'calendar' %}" class="nav-item">
+                        <i data-lucide="calendar" class="w-5 h-5"></i>
+                        <span>수거 캘린더</span>
+                    </a>
+                    <a href="{% url 'guide' %}" class="nav-item nav-button">
+                        <i data-lucide="book-open" class="w-5 h-5"></i>
+                        <span>분리수거 가이드</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Compact Hero Section -->
+        <section class="relative bg-gradient-hero text-white py-12">
+            <div class="absolute inset-0">
+                <div class="hero-image"></div>
+            </div>
+            <div class="relative container mx-auto px-4">
+                <div class="max-w-2xl mx-auto text-center">
+                    <h1 class="text-3xl md:text-4xl font-bold mb-4">
+                        스마트 쓰레기 배출 알림
+                    </h1>
+                    <p class="text-base md:text-lg mb-6 opacity-90">
+                        지역별 쓰레기 수거 일정과 분리수거 가이드를 제공합니다
+                    </p>
+                    <div class="flex flex-wrap justify-center gap-3">
+                        <span class="badge bg-white/20 text-white border-white/30 px-3 py-1">
+                            <i data-lucide="calendar" class="w-3 h-3 mr-1 inline"></i>
+                            월별 캘린더
+                        </span>
+                        <span class="badge bg-white/20 text-white border-white/30 px-3 py-1">
+                            <i data-lucide="recycle" class="w-3 h-3 mr-1 inline"></i>
+                            분리수거 가이드
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content -->
+        <section class="container mx-auto px-4 py-12">
+            <div class="space-y-12">
+                <!-- Region Selection -->
+                <div class="flex flex-col items-center text-center">
+                    <h2 class="text-2xl font-bold text-primary mb-4">
+                        거주 지역을 선택해주세요
+                    </h2>
+                    <p class="text-muted-foreground mb-8 max-w-md">
+                        지역별 맞춤 쓰레기 수거 일정과 분리수거 정보를 제공합니다
+                    </p>
+                    <div class="w-full max-w-md space-y-4">
+                        <select id="region-select-home" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="">지역을 선택하세요</option>
+                            {% for region in regions %}
+                                <option value="{{ region.code }}">{{ region.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 알림 설정 -->
+                <div id="notification-settings" class="bg-card border border-accent/20 rounded-lg p-6 mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                                <i data-lucide="bell" class="w-5 h-5 text-primary-foreground"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-foreground">알림 설정</h3>
+                                <p class="text-sm text-muted-foreground">수거일 알림을 받으세요</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="notification-enabled" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                    <div id="notification-options" class="space-y-4" style="display: none;">
+                        <div>
+                            <label class="block text-sm font-medium text-foreground mb-2">알림 받을 지역</label>
+                            <select id="notification-region" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option value="">지역을 선택하세요</option>
+                                {% for region in regions %}
+                                    <option value="{{ region.code }}">{{ region.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="notify-before" checked class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary">
+                                <span class="text-sm text-foreground">수거 전날 알림</span>
+                            </label>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="notify-day" checked class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary">
+                                <span class="text-sm text-foreground">수거 당일 알림</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-foreground mb-2">알림 시간</label>
+                            <input type="time" id="notification-time" value="20:00" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        </div>
+                        <button id="save-notification-btn" class="w-full btn-primary">
+                            알림 설정 저장
+                        </button>
+                        <div id="notification-status" class="text-sm text-center"></div>
+                    </div>
+                </div>
+
+                <!-- Quick Action Cards -->
+                <div class="grid md:grid-cols-2 gap-4">
+                    <a href="{% url 'calendar' %}" class="block">
+                        <div class="p-4 bg-accent/10 hover:bg-accent/20 rounded-lg cursor-pointer group">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                                        <i data-lucide="calendar" class="w-5 h-5 text-primary-foreground"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-foreground">수거 캘린더</h4>
+                                        <p class="text-sm text-muted-foreground">월별 배출 일정 확인</p>
+                                    </div>
+                                </div>
+                                <i data-lucide="arrow-right" class="w-5 h-5 text-muted-foreground group-hover:text-primary"></i>
+                            </div>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'guide' %}" class="block">
+                        <div class="p-4 bg-accent/10 hover:bg-accent/20 rounded-lg cursor-pointer group">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-waste-recyclable rounded-full flex items-center justify-center">
+                                        <i data-lucide="recycle" class="w-5 h-5 text-white"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-foreground">분리수거 가이드</h4>
+                                        <p class="text-sm text-muted-foreground">올바른 분류 방법</p>
+                                    </div>
+                                </div>
+                                <i data-lucide="arrow-right" class="w-5 h-5 text-muted-foreground group-hover:text-primary"></i>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="bg-secondary/30 py-12">
+            <div class="container mx-auto px-4">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-primary mb-3">
+                        편리한 기능들
+                    </h2>
+                    <p class="text-muted-foreground">
+                        쓰레기 배출을 더욱 쉽고 정확하게
+                    </p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="text-center p-6 bg-card rounded-lg border border-accent/20">
+                        <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="calendar" class="w-6 h-6 text-primary-foreground"></i>
+                        </div>
+                        <h3 class="font-semibold mb-2">월별 캘린더</h3>
+                        <p class="text-muted-foreground text-sm">
+                            한 달 전체 수거 일정을 달력으로 한눈에 확인
+                        </p>
+                    </div>
+                    <div class="text-center p-6 bg-card rounded-lg border border-accent/20">
+                        <div class="w-12 h-12 bg-waste-food rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="recycle" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <h3 class="font-semibold mb-2">분리수거 가이드</h3>
+                        <p class="text-muted-foreground text-sm">
+                            올바른 분리수거 방법과 팁을 상세히 안내
+                        </p>
+                    </div>
+                    <div class="text-center p-6 bg-card rounded-lg border border-accent/20">
+                        <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="bell" class="w-6 h-6 text-primary-foreground"></i>
+                        </div>
+                        <h3 class="font-semibold mb-2">알림 서비스</h3>
+                        <p class="text-muted-foreground text-sm">
+                            수거일 전날과 당일 브라우저 알림으로 놓치지 않게
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+        // Initialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // 사용자 ID 가져오기 또는 생성
+        function getUserId() {
+            let userId = localStorage.getItem('user_id');
+            if (!userId) {
+                userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('user_id', userId);
+            }
+            return userId;
+        }
+
+        // 알림 권한 요청
+        async function requestNotificationPermission() {
+            if (!('Notification' in window)) {
+                alert('이 브라우저는 알림을 지원하지 않습니다.');
+                return false;
+            }
+
+            if (Notification.permission === 'granted') {
+                return true;
+            }
+
+            if (Notification.permission !== 'denied') {
+                const permission = await Notification.requestPermission();
+                return permission === 'granted';
+            }
+
+            return false;
+        }
+
+        // 알림 표시
+        function showNotification(title, message) {
+            if (Notification.permission === 'granted') {
+                new Notification(title, {
+                    body: message,
+                    icon: '/static/pages/favicon.ico',
+                    badge: '/static/pages/favicon.ico',
+                    tag: 'waste-collection',
+                    requireInteraction: false
+                });
+            }
+        }
+
+        // 알림 설정 저장
+        async function saveNotificationSetting() {
+            const enabled = document.getElementById('notification-enabled').checked;
+            const region = document.getElementById('notification-region').value;
+            const notifyBefore = document.getElementById('notify-before').checked;
+            const notifyDay = document.getElementById('notify-day').checked;
+            const notificationTime = document.getElementById('notification-time').value;
+
+            if (enabled && !region) {
+                document.getElementById('notification-status').textContent = '지역을 선택해주세요.';
+                document.getElementById('notification-status').style.color = '#ef4444';
+                return;
+            }
+
+            if (enabled) {
+                const hasPermission = await requestNotificationPermission();
+                if (!hasPermission) {
+                    document.getElementById('notification-status').textContent = '알림 권한이 필요합니다. 브라우저 설정에서 허용해주세요.';
+                    document.getElementById('notification-status').style.color = '#ef4444';
+                    document.getElementById('notification-enabled').checked = false;
+                    return;
+                }
+            }
+
+            const userId = getUserId();
+            try {
+                const response = await fetch('/api/notification/setting/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-User-Id': userId
+                    },
+                    body: JSON.stringify({
+                        region: region,
+                        enabled: enabled,
+                        notify_before: notifyBefore,
+                        notify_day: notifyDay,
+                        notification_time: notificationTime
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('notification-status').textContent = '알림 설정이 저장되었습니다.';
+                    document.getElementById('notification-status').style.color = '#22c55e';
+                    
+                    // 알림 체크 시작
+                    if (enabled) {
+                        startNotificationCheck();
+                    } else {
+                        stopNotificationCheck();
+                    }
+                } else {
+                    document.getElementById('notification-status').textContent = '설정 저장에 실패했습니다.';
+                    document.getElementById('notification-status').style.color = '#ef4444';
+                }
+            } catch (error) {
+                console.error('알림 설정 저장 오류:', error);
+                document.getElementById('notification-status').textContent = '오류가 발생했습니다.';
+                document.getElementById('notification-status').style.color = '#ef4444';
+            }
+        }
+
+        // 알림 설정 불러오기
+        async function loadNotificationSetting() {
+            const userId = getUserId();
+            try {
+                const response = await fetch('/api/notification/setting/get/', {
+                    headers: {
+                        'X-User-Id': userId
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success && data.setting) {
+                    const setting = data.setting;
+                    document.getElementById('notification-enabled').checked = setting.enabled;
+                    document.getElementById('notification-region').value = setting.region || '';
+                    document.getElementById('notify-before').checked = setting.notify_before;
+                    document.getElementById('notify-day').checked = setting.notify_day;
+                    document.getElementById('notification-time').value = setting.notification_time || '20:00';
+                    
+                    if (setting.enabled) {
+                        document.getElementById('notification-options').style.display = 'block';
+                        startNotificationCheck();
+                    }
+                }
+            } catch (error) {
+                console.error('알림 설정 불러오기 오류:', error);
+            }
+        }
+
+        // 다가오는 수거일 확인
+        let notificationCheckInterval = null;
+        const notifiedCollections = new Set();
+
+        async function checkUpcomingCollections() {
+            const userId = getUserId();
+            try {
+                const response = await fetch('/api/notification/collections/', {
+                    headers: {
+                        'X-User-Id': userId
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success && data.collections) {
+                    const now = new Date();
+                    const currentTime = now.getHours() * 60 + now.getMinutes();
+                    
+                    data.collections.forEach(collection => {
+                        const collectionKey = `${collection.date}_${collection.waste_type}`;
+                        
+                        // 이미 알림을 보낸 경우 스킵
+                        if (notifiedCollections.has(collectionKey)) {
+                            return;
+                        }
+
+                        // 알림 시간 확인
+                        const notificationTime = document.getElementById('notification-time').value;
+                        const [hours, minutes] = notificationTime.split(':').map(Number);
+                        const notificationMinutes = hours * 60 + minutes;
+                        
+                        // 알림 시간이 지났는지 확인 (오늘 알림은 시간 체크 안 함)
+                        if (collection.days_until > 0 && currentTime < notificationMinutes) {
+                            return;
+                        }
+
+                        // 알림 표시
+                        let title, message;
+                        if (collection.days_until === 0) {
+                            title = '🗑️ 오늘은 수거일입니다!';
+                            message = `${collection.waste_type} 수거일입니다. 배출 준비하세요!`;
+                        } else if (collection.days_until === 1) {
+                            title = '🗑️ 내일은 수거일입니다!';
+                            message = `내일 ${collection.waste_type} 수거일입니다. 미리 준비하세요!`;
+                        } else {
+                            return;
+                        }
+
+                        showNotification(title, message);
+                        notifiedCollections.add(collectionKey);
+                        
+                        // 하루가 지나면 Set에서 제거 (메모리 관리)
+                        setTimeout(() => {
+                            notifiedCollections.delete(collectionKey);
+                        }, 24 * 60 * 60 * 1000);
+                    });
+                }
+            } catch (error) {
+                console.error('수거일 확인 오류:', error);
+            }
+        }
+
+        // 알림 체크 시작
+        function startNotificationCheck() {
+            if (notificationCheckInterval) {
+                clearInterval(notificationCheckInterval);
+            }
+            
+            // 즉시 한 번 확인
+            checkUpcomingCollections();
+            
+            // 1분마다 확인
+            notificationCheckInterval = setInterval(checkUpcomingCollections, 60000);
+        }
+
+        // 알림 체크 중지
+        function stopNotificationCheck() {
+            if (notificationCheckInterval) {
+                clearInterval(notificationCheckInterval);
+                notificationCheckInterval = null;
+            }
+        }
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            // 알림 설정 UI 이벤트
+            const notificationEnabled = document.getElementById('notification-enabled');
+            const notificationOptions = document.getElementById('notification-options');
+            const saveBtn = document.getElementById('save-notification-btn');
+
+            notificationEnabled.addEventListener('change', function() {
+                if (this.checked) {
+                    notificationOptions.style.display = 'block';
+                } else {
+                    notificationOptions.style.display = 'none';
+                    stopNotificationCheck();
+                    saveNotificationSetting();
+                }
+            });
+
+            saveBtn.addEventListener('click', saveNotificationSetting);
+
+            // 저장된 설정 불러오기
+            loadNotificationSetting();
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,435 @@
+{% load static %}
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>분리수거 가이드 - 스마트 쓰레기 배출 알림</title>
+    <link rel="stylesheet" href="{% static 'pages/styles.css' %}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="min-h-screen bg-background">
+        <!-- Navigation Bar -->
+        <nav class="navbar">
+            <div class="navbar-container">
+                <!-- Logo -->
+                <div class="navbar-logo">
+                    <div class="logo-icon">
+                        <i data-lucide="recycle" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <span class="logo-text">버림</span>
+                </div>
+                
+                <!-- Navigation Items -->
+                <div class="navbar-menu">
+                    <a href="{% url 'index' %}" class="nav-item">
+                        <i data-lucide="home" class="w-5 h-5"></i>
+                        <span>홈</span>
+                    </a>
+                    <a href="{% url 'calendar' %}" class="nav-item">
+                        <i data-lucide="calendar" class="w-5 h-5"></i>
+                        <span>수거 캘린더</span>
+                    </a>
+                    <a href="{% url 'guide' %}" class="nav-item active">
+                        <i data-lucide="book-open" class="w-5 h-5"></i>
+                        <span>분리수거 가이드</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container mx-auto px-4 py-8">
+            <div class="mb-8">
+                <div class="flex items-center gap-4 mb-4">
+                    <a href="{% url 'index' %}">
+                        <button class="btn-outline flex items-center gap-2">
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                            홈으로
+                        </button>
+                    </a>
+                    <h1 class="text-2xl font-bold text-primary">분리수거 가이드</h1>
+                </div>
+                <p class="text-muted-foreground">
+                    올바른 분리수거 방법과 팁을 확인하세요
+                </p>
+            </div>
+
+            <!-- Region Selection for District Info -->
+            <div class="mb-8 flex flex-col items-center text-center max-w-md mx-auto">
+                <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4">
+                    <i data-lucide="map-pin" class="w-8 h-8 text-primary-foreground"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-primary mb-3">
+                    지역을 선택해주세요
+                </h2>
+                <p class="text-muted-foreground mb-6">
+                    지역별 배출 정보를 확인할 지역을 선택하세요
+                </p>
+                <div class="w-full">
+                    <select id="region-select-guide" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <option value="">모든 지역 보기</option>
+                        {% for region in regions %}
+                            <option value="{{ region.code }}">{{ region.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Guide Categories -->
+            <div class="space-y-8">
+                <!-- General Waste Guide -->
+                <div class="guide-section">
+                    <div class="guide-header">
+                        <div class="guide-icon bg-waste-general">
+                            <i data-lucide="trash-2" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold text-foreground">일반쓰레기</h2>
+                            <p class="text-muted-foreground">재활용이 불가능한 쓰레기</p>
+                        </div>
+                    </div>
+                    <div class="guide-content">
+                        <div class="guide-items">
+                            <div class="guide-item">
+                                <h3 class="font-medium text-foreground mb-2">포함되는 것</h3>
+                                <ul class="guide-list">
+                                    <li>음식물이 묻은 종이 (휴지, 냅킨 등)</li>
+                                    <li>재활용이 불가능한 플라스틱</li>
+                                    <li>오염된 종이류</li>
+                                    <li>작은 유리 조각</li>
+                                    <li>일회용 기저귀</li>
+                                </ul>
+                            </div>
+                            <div class="guide-item">
+                                <h3 class="font-medium text-foreground mb-2">배출 방법</h3>
+                                <ul class="guide-list">
+                                    <li>투명한 비닐봉투에 담아 배출</li>
+                                    <li>음식물은 완전히 제거 후 배출</li>
+                                    <li>봉투는 20리터 이하로 제한</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recyclable Waste Guide -->
+                <div class="guide-section">
+                    <div class="guide-header">
+                        <div class="guide-icon bg-waste-recyclable">
+                            <i data-lucide="recycle" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold text-foreground">재활용품</h2>
+                            <p class="text-muted-foreground">재활용이 가능한 쓰레기</p>
+                        </div>
+                    </div>
+                    <div class="guide-content">
+                        <div class="guide-categories">
+                            <div class="guide-category">
+                                <h3 class="font-medium text-foreground mb-3">플라스틱</h3>
+                                <div class="guide-items">
+                                    <div class="guide-item">
+                                        <h4 class="font-medium text-sm text-foreground mb-1">포함되는 것</h4>
+                                        <ul class="guide-list text-sm">
+                                            <li>PET병 (음료수병)</li>
+                                            <li>플라스틱 용기 (요거트, 샴푸 등)</li>
+                                            <li>비닐봉투, 포장재</li>
+                                        </ul>
+                                    </div>
+                                    <div class="guide-item">
+                                        <h4 class="font-medium text-sm text-foreground mb-1">배출 방법</h4>
+                                        <ul class="guide-list text-sm">
+                                            <li>내용물 완전히 비우기</li>
+                                            <li>라벨 제거 후 세척</li>
+                                            <li>투명한 비닐봉투에 담아 배출</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="guide-category">
+                                <h3 class="font-medium text-foreground mb-3">종이류</h3>
+                                <div class="guide-items">
+                                    <div class="guide-item">
+                                        <h4 class="font-medium text-sm text-foreground mb-1">포함되는 것</h4>
+                                        <ul class="guide-list text-sm">
+                                            <li>신문지, 잡지</li>
+                                            <li>골판지, 종이상자</li>
+                                            <li>노트, 책</li>
+                                        </ul>
+                                    </div>
+                                    <div class="guide-item">
+                                        <h4 class="font-medium text-sm text-foreground mb-1">배출 방법</h4>
+                                        <ul class="guide-list text-sm">
+                                            <li>비닐 코팅 제거</li>
+                                            <li>테이프, 스테이플 제거</li>
+                                            <li>끈으로 묶어서 배출</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="guide-category">
+                                <h3 class="font-medium text-foreground mb-3">유리병</h3>
+                                <div class="guide-items">
+                                    <div class="guide-item">
+                                        <h4 class="font-medium text-sm text-foreground mb-1">포함되는 것</h4>
+                                        <ul class="guide-list text-sm">
+                                            <li>음료수병, 주류병</li>
+                                            <li>식품용 유리병</li>
+                                            <li>화장품 용기</li>
+                                        </ul>
+                                    </div>
+                                    <div class="guide-item">
+                                        <h4 class="font-medium text-sm text-foreground mb-1">배출 방법</h4>
+                                        <ul class="guide-list text-sm">
+                                            <li>내용물 완전히 비우기</li>
+                                            <li>뚜껑과 라벨 제거</li>
+                                            <li>깨뜨리지 말고 그대로 배출</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="guide-category">
+                                <h3 class="font-medium text-foreground mb-3">캔류</h3>
+                                <div class="guide-items">
+                                    <div class="guide-item">
+                                        <h4 class="font-medium text-sm text-foreground mb-1">포함되는 것</h4>
+                                        <ul class="guide-list text-sm">
+                                            <li>음료수캔, 맥주캔</li>
+                                            <li>식품캔 (참치캔, 통조림 등)</li>
+                                            <li>스프레이캔</li>
+                                        </ul>
+                                    </div>
+                                    <div class="guide-item">
+                                        <h4 class="font-medium text-sm text-foreground mb-1">배출 방법</h4>
+                                        <ul class="guide-list text-sm">
+                                            <li>내용물 완전히 비우기</li>
+                                            <li>세척 후 배출</li>
+                                            <li>압축하여 배출</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Food Waste Guide -->
+                <div class="guide-section">
+                    <div class="guide-header">
+                        <div class="guide-icon bg-waste-food">
+                            <i data-lucide="apple" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold text-foreground">음식물쓰레기</h2>
+                            <p class="text-muted-foreground">생물학적으로 분해 가능한 음식물</p>
+                        </div>
+                    </div>
+                    <div class="guide-content">
+                        <div class="guide-items">
+                            <div class="guide-item">
+                                <h3 class="font-medium text-foreground mb-2">포함되는 것</h3>
+                                <ul class="guide-list">
+                                    <li>과일, 채소 껍질</li>
+                                    <li>남은 음식물</li>
+                                    <li>차 찌꺼기, 커피 찌꺼기</li>
+                                    <li>계란 껍질</li>
+                                    <li>생선 비늘, 내장</li>
+                                </ul>
+                            </div>
+                            <div class="guide-item">
+                                <h3 class="font-medium text-foreground mb-2">배출 방법</h3>
+                                <ul class="guide-list">
+                                    <li>전용 음식물쓰레기 봉투 사용</li>
+                                    <li>수분을 최대한 제거</li>
+                                    <li>뼈, 껍질은 가능한 한 제거</li>
+                                    <li>냉장고에 보관 후 배출</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Large Waste Guide -->
+                <div class="guide-section">
+                    <div class="guide-header">
+                        <div class="guide-icon bg-waste-large">
+                            <i data-lucide="sofa" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold text-foreground">대형폐기물</h2>
+                            <p class="text-muted-foreground">가구, 가전제품 등 대형 물품</p>
+                        </div>
+                    </div>
+                    <div class="guide-content">
+                        <div class="guide-items">
+                            <div class="guide-item">
+                                <h3 class="font-medium text-foreground mb-2">포함되는 것</h3>
+                                <ul class="guide-list">
+                                    <li>가구 (침대, 소파, 책상 등)</li>
+                                    <li>가전제품 (TV, 냉장고, 세탁기 등)</li>
+                                    <li>자전거, 오토바이</li>
+                                    <li>피아노, 오르간</li>
+                                </ul>
+                            </div>
+                            <div class="guide-item">
+                                <h3 class="font-medium text-foreground mb-2">배출 방법</h3>
+                                <ul class="guide-list">
+                                    <li>사전 신고 후 배출</li>
+                                    <li>대형폐기물 스티커 구매</li>
+                                    <li>지정된 장소에 배출</li>
+                                    <li>배출 시간 준수</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- District-Specific Information -->
+                <div class="guide-section">
+                    <div class="guide-header">
+                        <div class="guide-icon bg-primary">
+                            <i data-lucide="map-pin" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold text-foreground">지역별 배출 정보</h2>
+                        </div>
+                    </div>
+                    <div class="guide-content">
+                        <div class="district-info">
+                            {% for region in regions %}
+                                {% if region.code in region_schedules %}
+                                    {% with schedule=region_schedules|get_item:region.code %}
+                                    <div class="district-card" data-region="{{ region.code }}">
+                                        <h3 class="district-title">{{ schedule.name }}</h3>
+                                        <div class="district-details">
+                                            <div class="detail-item">
+                                                <strong>배출 시간:</strong> {{ schedule.discharge_time }}
+                                            </div>
+                                            {% if schedule.residential_area_time %}
+                                            <div class="detail-item">
+                                                <strong>주거지역:</strong> {{ schedule.residential_area_time }}
+                                            </div>
+                                            {% endif %}
+                                            {% if schedule.commercial_area_time %}
+                                            <div class="detail-item">
+                                                <strong>상가지역/가로지역:</strong> {{ schedule.commercial_area_time }}
+                                            </div>
+                                            {% endif %}
+                                            <div class="detail-item">
+                                                <strong>배출 장소:</strong> {{ schedule.discharge_location }}
+                                            </div>
+                                            <div class="detail-item">
+                                                <strong>배출 방법:</strong> {{ schedule.discharge_method }}
+                                            </div>
+                                            {% if schedule.special_note %}
+                                            <div class="detail-item special">
+                                                <strong>특별 배출:</strong> {{ schedule.special_note|linebreaks }}
+                                            </div>
+                                            {% endif %}
+                                            <div class="detail-item">
+                                                <strong>문의:</strong> {{ schedule.contact }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endwith %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tips Section -->
+                <div class="guide-section">
+                    <div class="guide-header">
+                        <div class="guide-icon bg-primary">
+                            <i data-lucide="lightbulb" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold text-foreground">분리수거 팁</h2>
+                            <p class="text-muted-foreground">효과적인 분리수거를 위한 유용한 정보</p>
+                        </div>
+                    </div>
+                    <div class="guide-content">
+                        <div class="tips-grid">
+                            <div class="tip-card">
+                                <h3 class="font-medium text-foreground mb-2">💡 효율적인 분리수거</h3>
+                                <ul class="guide-list text-sm">
+                                    <li>용기류는 내용물을 완전히 비우기</li>
+                                    <li>세척이 어려운 경우 물로 헹구기</li>
+                                    <li>라벨과 뚜껑은 재질별로 분리</li>
+                                </ul>
+                            </div>
+                            <div class="tip-card">
+                                <h3 class="font-medium text-foreground mb-2">♻️ 재활용 마크 확인</h3>
+                                <ul class="guide-list text-sm">
+                                    <li>제품에 재활용 마크 확인</li>
+                                    <li>재질별 분리수거 방법 숙지</li>
+                                    <li>지역별 분리수거 규칙 확인</li>
+                                </ul>
+                            </div>
+                            <div class="tip-card">
+                                <h3 class="font-medium text-foreground mb-2">🗓️ 배출 시간 준수</h3>
+                                <ul class="guide-list text-sm">
+                                    <li>지정된 날짜와 시간에 배출</li>
+                                    <li>기상 상황 고려하여 배출</li>
+                                    <li>야간 배출 금지 지역 확인</li>
+                                </ul>
+                            </div>
+                            <div class="tip-card">
+                                <h3 class="font-medium text-foreground mb-2">🌱 환경을 위한 실천</h3>
+                                <ul class="guide-list text-sm">
+                                    <li>재사용 가능한 용기 사용</li>
+                                    <li>과대포장 제품 피하기</li>
+                                    <li>분리수거 습관 만들기</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+        // Initialize Lucide icons only
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Region filter functionality for guide page
+        document.addEventListener('DOMContentLoaded', function() {
+            const regionSelect = document.getElementById('region-select-guide');
+            const districtCards = document.querySelectorAll('.district-card');
+
+            function filterRegions() {
+                const selectedRegion = regionSelect.value;
+                
+                districtCards.forEach(function(card) {
+                    if (selectedRegion === '') {
+                        // "모든 지역 보기" 선택 시 모두 표시
+                        card.style.display = 'block';
+                    } else {
+                        // 선택한 지역만 표시
+                        if (card.getAttribute('data-region') === selectedRegion) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    }
+                });
+            }
+
+            if (regionSelect) {
+                regionSelect.addEventListener('change', filterRegions);
+            }
+        });
+    </script>
+</body>
+</html>
+
